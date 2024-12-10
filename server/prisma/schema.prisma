@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Server {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  imageUrl   String?
+  inviteCode String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  members    Member[]
+  channels   Channel[]
+}
+
+model Member {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  role      Role     @default(GUEST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serverId  String   @db.ObjectId
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  
+  messages  Message[]
+}
+
+model Channel {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  type      ChannelType @default(TEXT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serverId  String   @db.ObjectId
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  fileUrl   String?
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channelId String   @db.ObjectId
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  memberId  String   @db.ObjectId
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  MODERATOR
+  GUEST
+}
+
+enum ChannelType {
+  TEXT
+  AUDIO
+  VIDEO
+}
